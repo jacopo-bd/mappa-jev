@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <link rel="icon" href="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" integrity="sha512-xh6O/CkQoPOWDdYTDqeRdPCVd1SpvCA9XXcUnZS2FmJNp1coAFzvtCN9BmamE+4aHK8yyUHUSCcJHgXloTyT2A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+<style>
+    #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #01724e;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        /* Dissolvenza di 3 secondi */
+        transition: opacity 3s ease-out; /* --- MODIFICATO A 3s --- */
+    }
+
+    /* 1. Animazione di rotazione (da 0s a 2s) */
+    #loading-logo.spinning {
+         /* --- MODIFICATO: 3 giri 'pulse' in 2 secondi --- */
+        animation: pulse-spin 2s ease-in-out 2 forwards;
+    }
+
+    @keyframes pulse-spin {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: scale(0.8); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* Animazione puntini */
+    #loading-dots::after {
+        display: inline-block;
+        text-align: left;
+        width: 1.2em; /* Spazio per 3 puntini */
+        content: '.';
+        animation: dots 1.5s linear infinite;
+    }
+
+    @keyframes dots {
+        0%, 100% { content: '.'; }
+        33% { content: '..'; }
+        66% { content: '...'; }
+    }
+
+</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_a84e55bceb7129320e88b141ae9cf68b {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.css"/>
+</head>
+<body>
+    
+    
+<div id="loading-overlay">
+    <img id="loading-logo" src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" alt="Logo Jever" style="width: 100px; margin-bottom: 20px;">
+    <p style="color: #fed20f; font-family: Tahoma, sans-serif; margin-top: 15px;">Cambiando il fusto<span id="loading-dots"></span></p>
+</div>
+    
+<script>
+    window.addEventListener('load', function() {
+        var overlay = document.getElementById('loading-overlay');
+        var logo = document.getElementById('loading-logo');
+
+        // 1. FA PARTIRE L'ANIMAZIONE DI ROTAZIONE (2 secondi, 3 giri con pulse)
+        logo.classList.add('spinning');
+
+        // 2. IMPOSTA UN TIMER PER LA FINE DELLA ROTAZIONE (2000ms = 2s)
+        setTimeout(function() {
+
+            // 3. FA PARTIRE LA DISSOLVENZA (impostando l'opacità a 0)
+            overlay.style.opacity = '0';
+
+            // 4. IMPOSTA UN TIMER PER NASCONDERE L'OVERLAY (dopo 3s, durata transizione)
+            setTimeout(function() {
+                overlay.style.display = 'none';
+            }, 3000); // --- MODIFICATO A 3000ms --- (durata della transizione CSS)
+
+        }, 2000); // --- MODIFICATO A 2000ms --- (durata di 'pulse-spin')
+
+    });
+</script>
+    
+            <div class="folium-map" id="map_a84e55bceb7129320e88b141ae9cf68b" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_a84e55bceb7129320e88b141ae9cf68b = L.map(
+                "map_a84e55bceb7129320e88b141ae9cf68b",
+                {
+                    center: [45.54783947273899, 11.546522928789285],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "maxBounds": [
+[
+44.0,
+6.5,
+],
+[
+47.1,
+13.8,
+],
+],
+  "zoom": 10,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_0adc57a5661be581386de3026eb180b6 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_0adc57a5661be581386de3026eb180b6.addTo(map_a84e55bceb7129320e88b141ae9cf68b);
+        
+    
+            var tile_layer_25c1ecbc0939b89e88335881425fffee = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Esri",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_25c1ecbc0939b89e88335881425fffee.addTo(map_a84e55bceb7129320e88b141ae9cf68b);
+        
+    
+            var marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f = L.markerClusterGroup(
+                {
+}
+            );
+        
+    
+            var marker_cea9709963e88d9c340bb89cb6decd28 = L.marker(
+                [45.54087367925935, 11.597126497167359],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_8153b95f20981d57f65d4d331d73ce97 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_283b74c28c45e81c32aa1a524550aa23 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_84372ad9cd3ae2fb9e66528721c287a5 = $(`<div id="html_84372ad9cd3ae2fb9e66528721c287a5" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Dolce Vita Bar             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Str. Cà Balbi 236</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Vicenza</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Dolce%20Vita%20Bar%2C%20Str.%20C%C3%A0%20Balbi%20236%2C%20Vicenza" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_283b74c28c45e81c32aa1a524550aa23.setContent(html_84372ad9cd3ae2fb9e66528721c287a5);
+            
+        
+
+        marker_cea9709963e88d9c340bb89cb6decd28.bindPopup(popup_283b74c28c45e81c32aa1a524550aa23)
+        ;
+
+        
+    
+    
+            marker_cea9709963e88d9c340bb89cb6decd28.bindTooltip(
+                `<div>
+                     Dolce Vita Bar
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_cea9709963e88d9c340bb89cb6decd28.setIcon(icon_8153b95f20981d57f65d4d331d73ce97);
+            
+    
+            var marker_6e6d67f4590a68838db177ef993776b4 = L.marker(
+                [45.67977724990376, 11.45395031235232],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_eedd8e80e4dc19224ca10ab6a7056b66 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_b1414361a0428091a9601d260a87bec8 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_6f3ae41fe049d207b7e5fa956f4dda0b = $(`<div id="html_6f3ae41fe049d207b7e5fa956f4dda0b" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Factory Cafè             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Volpato 98</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Marano Vicentino</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Factory%20Caf%C3%A8%2C%20Via%20Volpato%2098%2C%20Marano%20Vicentino" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_b1414361a0428091a9601d260a87bec8.setContent(html_6f3ae41fe049d207b7e5fa956f4dda0b);
+            
+        
+
+        marker_6e6d67f4590a68838db177ef993776b4.bindPopup(popup_b1414361a0428091a9601d260a87bec8)
+        ;
+
+        
+    
+    
+            marker_6e6d67f4590a68838db177ef993776b4.bindTooltip(
+                `<div>
+                     Factory Cafè
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6e6d67f4590a68838db177ef993776b4.setIcon(icon_eedd8e80e4dc19224ca10ab6a7056b66);
+            
+    
+            var marker_e36012b72659427c8c30a5dcbcffe258 = L.marker(
+                [45.73390059192167, 11.373822574747132],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_981f82fc0c2ed3a00424d912d29ec456 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_f31d604d2f2976b62f7ccb82c1ea59fd = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_21e3ee553d8047d467ae899cc9af8f85 = $(`<div id="html_21e3ee553d8047d467ae899cc9af8f85" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Osteria Corte Sconta             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Roma 8</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Santorso</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Osteria%20Corte%20Sconta%2C%20Via%20Roma%208%2C%20Santorso" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_f31d604d2f2976b62f7ccb82c1ea59fd.setContent(html_21e3ee553d8047d467ae899cc9af8f85);
+            
+        
+
+        marker_e36012b72659427c8c30a5dcbcffe258.bindPopup(popup_f31d604d2f2976b62f7ccb82c1ea59fd)
+        ;
+
+        
+    
+    
+            marker_e36012b72659427c8c30a5dcbcffe258.bindTooltip(
+                `<div>
+                     Osteria Corte Sconta
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e36012b72659427c8c30a5dcbcffe258.setIcon(icon_981f82fc0c2ed3a00424d912d29ec456);
+            
+    
+            var marker_4ac068ce1a037f7b1dd484e6c7ad40c5 = L.marker(
+                [45.63611093231709, 11.54922906713959],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_6d98384a230ea762738f4b566d976052 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_1999b6c5ee54248ea532f8c0cd7f571b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_576aee935177b710c259c9efbc316ba9 = $(`<div id="html_576aee935177b710c259c9efbc316ba9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Industrial Pub             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Piazza Monza 18</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Dueville</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Industrial%20Pub%2C%20Piazza%20Monza%2018%2C%20Dueville" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_1999b6c5ee54248ea532f8c0cd7f571b.setContent(html_576aee935177b710c259c9efbc316ba9);
+            
+        
+
+        marker_4ac068ce1a037f7b1dd484e6c7ad40c5.bindPopup(popup_1999b6c5ee54248ea532f8c0cd7f571b)
+        ;
+
+        
+    
+    
+            marker_4ac068ce1a037f7b1dd484e6c7ad40c5.bindTooltip(
+                `<div>
+                     Industrial Pub
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_4ac068ce1a037f7b1dd484e6c7ad40c5.setIcon(icon_6d98384a230ea762738f4b566d976052);
+            
+    
+            var marker_0a9907147e5599a06736c6252f5b5dc2 = L.marker(
+                [45.56286763429792, 11.37241851342957],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_9311977f4a2f49b05bc332b56c69da14 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_0a7dc02e9ea1f55971e287176130f61f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_6bfdb15700b3718d8f6187993b2d4b96 = $(`<div id="html_6bfdb15700b3718d8f6187993b2d4b96" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Basement Pub             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Verdi 42</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Trissino</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Basement%20Pub%2C%20Via%20Verdi%2042%2C%20Trissino" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_0a7dc02e9ea1f55971e287176130f61f.setContent(html_6bfdb15700b3718d8f6187993b2d4b96);
+            
+        
+
+        marker_0a9907147e5599a06736c6252f5b5dc2.bindPopup(popup_0a7dc02e9ea1f55971e287176130f61f)
+        ;
+
+        
+    
+    
+            marker_0a9907147e5599a06736c6252f5b5dc2.bindTooltip(
+                `<div>
+                     Basement Pub
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0a9907147e5599a06736c6252f5b5dc2.setIcon(icon_9311977f4a2f49b05bc332b56c69da14);
+            
+    
+            var marker_774bbc6e12afd1c522c1a8fc8fc4cb55 = L.marker(
+                [45.51969791519491, 11.330936832856642],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_9b0b2cd900f5288dc69bbd338470a6ed = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_2382114c15cae6fee9436e925bdb6d13 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_efa842791ef8ca29be8227b02c461e52 = $(`<div id="html_efa842791ef8ca29be8227b02c461e52" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Quarantaquattro             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Campo Marzio 44</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Arzignano</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Quarantaquattro%2C%20Campo%20Marzio%2044%2C%20Arzignano" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_2382114c15cae6fee9436e925bdb6d13.setContent(html_efa842791ef8ca29be8227b02c461e52);
+            
+        
+
+        marker_774bbc6e12afd1c522c1a8fc8fc4cb55.bindPopup(popup_2382114c15cae6fee9436e925bdb6d13)
+        ;
+
+        
+    
+    
+            marker_774bbc6e12afd1c522c1a8fc8fc4cb55.bindTooltip(
+                `<div>
+                     Quarantaquattro
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_774bbc6e12afd1c522c1a8fc8fc4cb55.setIcon(icon_9b0b2cd900f5288dc69bbd338470a6ed);
+            
+    
+            var marker_fb4d4530f1f5640b934e36dafe4f42a2 = L.marker(
+                [45.70696797044153, 11.47886725615832],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_f73cd347fda6a72efc1abcc91a69bb26 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_b773ead4a2f4df6da1e3c5644718e025 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_c93ba208d18e399b84e4c60b5dc8d37e = $(`<div id="html_c93ba208d18e399b84e4c60b5dc8d37e" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Enoteca Papillon             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Piazza Ferrarin 20</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Thiene</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Enoteca%20Papillon%2C%20Piazza%20Ferrarin%2020%2C%20Thiene" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_b773ead4a2f4df6da1e3c5644718e025.setContent(html_c93ba208d18e399b84e4c60b5dc8d37e);
+            
+        
+
+        marker_fb4d4530f1f5640b934e36dafe4f42a2.bindPopup(popup_b773ead4a2f4df6da1e3c5644718e025)
+        ;
+
+        
+    
+    
+            marker_fb4d4530f1f5640b934e36dafe4f42a2.bindTooltip(
+                `<div>
+                     Enoteca Papillon
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_fb4d4530f1f5640b934e36dafe4f42a2.setIcon(icon_f73cd347fda6a72efc1abcc91a69bb26);
+            
+    
+            var marker_9574b40c6463423c5657df0f9384c038 = L.marker(
+                [45.6913893742564, 11.881300141364342],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_4b709fd5aa34c17e441c3c220f9cefc8 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_7d615debddceda0d65e3139788cdd996 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_579fe31ad8674075d35254ba4163eee7 = $(`<div id="html_579fe31ad8674075d35254ba4163eee7" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Beersheeba             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Marconi 67</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Castello di Godego</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Beersheeba%2C%20Via%20Marconi%2067%2C%20Castello%20di%20Godego" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_7d615debddceda0d65e3139788cdd996.setContent(html_579fe31ad8674075d35254ba4163eee7);
+            
+        
+
+        marker_9574b40c6463423c5657df0f9384c038.bindPopup(popup_7d615debddceda0d65e3139788cdd996)
+        ;
+
+        
+    
+    
+            marker_9574b40c6463423c5657df0f9384c038.bindTooltip(
+                `<div>
+                     Beersheeba
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_9574b40c6463423c5657df0f9384c038.setIcon(icon_4b709fd5aa34c17e441c3c220f9cefc8);
+            
+    
+            var marker_7ad747866e14d548a919b9edd0e26c52 = L.marker(
+                [45.54641613266365, 11.545747897236271],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_58a6a8cf4b2cac3c2979b1c91ea60c06 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_8c597f0c153291574dc5997c72d8afad = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_4c55dc76557c1d347b6def38fba3afcc = $(`<div id="html_4c55dc76557c1d347b6def38fba3afcc" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Ovosodo             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Contrà Pescherie Vecchie 16</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Vicenza</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Ovosodo%2C%20Contr%C3%A0%20Pescherie%20Vecchie%2016%2C%20Vicenza" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_8c597f0c153291574dc5997c72d8afad.setContent(html_4c55dc76557c1d347b6def38fba3afcc);
+            
+        
+
+        marker_7ad747866e14d548a919b9edd0e26c52.bindPopup(popup_8c597f0c153291574dc5997c72d8afad)
+        ;
+
+        
+    
+    
+            marker_7ad747866e14d548a919b9edd0e26c52.bindTooltip(
+                `<div>
+                     Ovosodo
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_7ad747866e14d548a919b9edd0e26c52.setIcon(icon_58a6a8cf4b2cac3c2979b1c91ea60c06);
+            
+    
+            var marker_5df1dd59491931d069a0400d0f22c261 = L.marker(
+                [45.74521793427443, 11.655070816190673],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_692ad7820525e290c5efb39ee3388727 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_c5375a901a603085347ce65c27262900 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_30c84493546c8233db9c6fb3b1dd0b38 = $(`<div id="html_30c84493546c8233db9c6fb3b1dd0b38" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Enoteca al Fante             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Piazza Castello 11</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Marostica</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Enoteca%20al%20Fante%2C%20Piazza%20Castello%2011%2C%20Marostica" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_c5375a901a603085347ce65c27262900.setContent(html_30c84493546c8233db9c6fb3b1dd0b38);
+            
+        
+
+        marker_5df1dd59491931d069a0400d0f22c261.bindPopup(popup_c5375a901a603085347ce65c27262900)
+        ;
+
+        
+    
+    
+            marker_5df1dd59491931d069a0400d0f22c261.bindTooltip(
+                `<div>
+                     Enoteca al Fante
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_5df1dd59491931d069a0400d0f22c261.setIcon(icon_692ad7820525e290c5efb39ee3388727);
+            
+    
+            var marker_8b99af46c8dd2adf090305a5cb9c952c = L.marker(
+                [45.75274847799867, 11.676404064886427],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_7d595fac50f0325d82c157f5c01b6975 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_ca36f5da98834817f40c9456f1f5b978 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bda812c5c4a6188ab32a3d66890c1460 = $(`<div id="html_bda812c5c4a6188ab32a3d66890c1460" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Ristretto 104             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Montello 104</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Marostica</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Ristretto%20104%2C%20Via%20Montello%20104%2C%20Marostica" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_ca36f5da98834817f40c9456f1f5b978.setContent(html_bda812c5c4a6188ab32a3d66890c1460);
+            
+        
+
+        marker_8b99af46c8dd2adf090305a5cb9c952c.bindPopup(popup_ca36f5da98834817f40c9456f1f5b978)
+        ;
+
+        
+    
+    
+            marker_8b99af46c8dd2adf090305a5cb9c952c.bindTooltip(
+                `<div>
+                     Ristretto 104
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_8b99af46c8dd2adf090305a5cb9c952c.setIcon(icon_7d595fac50f0325d82c157f5c01b6975);
+            
+    
+            var marker_906f9c63adeee0de8aa5938968cb4ef0 = L.marker(
+                [45.745933910320076, 11.655490219042854],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_92a8e8e8397262f616f18f60151330fc = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_6bd74d1e5f3526f5449b08b29a32a42f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_b03cfac94dda3b49cb14c0850cd5ae59 = $(`<div id="html_b03cfac94dda3b49cb14c0850cd5ae59" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Bottega Campana             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Piazza Castello 41</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Marostica</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Bottega%20Campana%2C%20Piazza%20Castello%2041%2C%20Marostica" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_6bd74d1e5f3526f5449b08b29a32a42f.setContent(html_b03cfac94dda3b49cb14c0850cd5ae59);
+            
+        
+
+        marker_906f9c63adeee0de8aa5938968cb4ef0.bindPopup(popup_6bd74d1e5f3526f5449b08b29a32a42f)
+        ;
+
+        
+    
+    
+            marker_906f9c63adeee0de8aa5938968cb4ef0.bindTooltip(
+                `<div>
+                     Bottega Campana
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_906f9c63adeee0de8aa5938968cb4ef0.setIcon(icon_92a8e8e8397262f616f18f60151330fc);
+            
+    
+            var marker_0de5a114687f9d7a4dfbf33afe9b479c = L.marker(
+                [45.646029253665915, 11.300496826683764],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_25beca995d13fb35f77eb26838eaf64f = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_39e6b6a16c36f0c2fa402c03e9aa48ad = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_091c07547702ca7d2b4a09722d1bac77 = $(`<div id="html_091c07547702ca7d2b4a09722d1bac77" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Taboo             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Corso Italia 9/E</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Valdagno</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Taboo%2C%20Corso%20Italia%209/E%2C%20Valdagno" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_39e6b6a16c36f0c2fa402c03e9aa48ad.setContent(html_091c07547702ca7d2b4a09722d1bac77);
+            
+        
+
+        marker_0de5a114687f9d7a4dfbf33afe9b479c.bindPopup(popup_39e6b6a16c36f0c2fa402c03e9aa48ad)
+        ;
+
+        
+    
+    
+            marker_0de5a114687f9d7a4dfbf33afe9b479c.bindTooltip(
+                `<div>
+                     Taboo
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0de5a114687f9d7a4dfbf33afe9b479c.setIcon(icon_25beca995d13fb35f77eb26838eaf64f);
+            
+    
+            var marker_42c1a75ebe8170e1e3dba86843a2b002 = L.marker(
+                [45.86050970145744, 11.658096205816713],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_673375297e65af56041ffb037ccf4445 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_b4a39db30a39be340ebfee7f3f05db92 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_4e5bee8f59d065e826736c727c2b0d37 = $(`<div id="html_4e5bee8f59d065e826736c727c2b0d37" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 El Ciuco             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Piazza San Marco 20</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Valbrenta</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=El%20Ciuco%2C%20Piazza%20San%20Marco%2020%2C%20Valbrenta" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_b4a39db30a39be340ebfee7f3f05db92.setContent(html_4e5bee8f59d065e826736c727c2b0d37);
+            
+        
+
+        marker_42c1a75ebe8170e1e3dba86843a2b002.bindPopup(popup_b4a39db30a39be340ebfee7f3f05db92)
+        ;
+
+        
+    
+    
+            marker_42c1a75ebe8170e1e3dba86843a2b002.bindTooltip(
+                `<div>
+                     El Ciuco
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_42c1a75ebe8170e1e3dba86843a2b002.setIcon(icon_673375297e65af56041ffb037ccf4445);
+            
+    
+            var marker_d6ff10de1fcd4a54ceafc5b319acd3b1 = L.marker(
+                [45.54809047377847, 11.547154338639848],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_324ca866507cea09d0dd13c704dabcd2 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_a6eacd0667463649eb0460ca67b374ef = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_746fc95c8201a87b8320d35dfe215237 = $(`<div id="html_746fc95c8201a87b8320d35dfe215237" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Pelle             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Stradella Santa Barbara 12</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Vicenza</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Pelle%2C%20Stradella%20Santa%20Barbara%2012%2C%20Vicenza" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_a6eacd0667463649eb0460ca67b374ef.setContent(html_746fc95c8201a87b8320d35dfe215237);
+            
+        
+
+        marker_d6ff10de1fcd4a54ceafc5b319acd3b1.bindPopup(popup_a6eacd0667463649eb0460ca67b374ef)
+        ;
+
+        
+    
+    
+            marker_d6ff10de1fcd4a54ceafc5b319acd3b1.bindTooltip(
+                `<div>
+                     Pelle
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d6ff10de1fcd4a54ceafc5b319acd3b1.setIcon(icon_324ca866507cea09d0dd13c704dabcd2);
+            
+    
+            var marker_1f8c8e58c6304cdcd5bfa36c5fa4200f = L.marker(
+                [45.7675475079986, 11.732053579321644],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_16831f1e0565674020f7cbb646124339 = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_391132588cbec785f3179bbb00b52792 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_9fe2839403767f5c3d902e82c634bee9 = $(`<div id="html_9fe2839403767f5c3d902e82c634bee9" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Al Saiso             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Gamba 4 </span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Bassano del Grappa</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Al%20Saiso%2C%20Via%20Gamba%204%20%2C%20Bassano%20del%20Grappa" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_391132588cbec785f3179bbb00b52792.setContent(html_9fe2839403767f5c3d902e82c634bee9);
+            
+        
+
+        marker_1f8c8e58c6304cdcd5bfa36c5fa4200f.bindPopup(popup_391132588cbec785f3179bbb00b52792)
+        ;
+
+        
+    
+    
+            marker_1f8c8e58c6304cdcd5bfa36c5fa4200f.bindTooltip(
+                `<div>
+                     Al Saiso
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_1f8c8e58c6304cdcd5bfa36c5fa4200f.setIcon(icon_16831f1e0565674020f7cbb646124339);
+            
+    
+            var marker_a1bce54d28ccb12d7337467b8cde7a8a = L.marker(
+                [45.650907814655966, 11.854460472345508],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_d40a5a535795c7ea2090ca1d8b217b4c = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_1172818bc6a94c5e01894c91b24371d0 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_bbdf7bcc21b12af46005113149926a2b = $(`<div id="html_bbdf7bcc21b12af46005113149926a2b" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Pizzeria Mezzaluna             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Giorgione 1/B</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">San Martino di Lupari</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Pizzeria%20Mezzaluna%2C%20Via%20Giorgione%201/B%2C%20San%20Martino%20di%20Lupari" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_1172818bc6a94c5e01894c91b24371d0.setContent(html_bbdf7bcc21b12af46005113149926a2b);
+            
+        
+
+        marker_a1bce54d28ccb12d7337467b8cde7a8a.bindPopup(popup_1172818bc6a94c5e01894c91b24371d0)
+        ;
+
+        
+    
+    
+            marker_a1bce54d28ccb12d7337467b8cde7a8a.bindTooltip(
+                `<div>
+                     Pizzeria Mezzaluna
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_a1bce54d28ccb12d7337467b8cde7a8a.setIcon(icon_d40a5a535795c7ea2090ca1d8b217b4c);
+            
+    
+            var marker_c3081c38544125c5d7b2cb0cc3d3663e = L.marker(
+                [45.76217208017597, 11.732382745483918],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_bcf901c6e9a7ec64d1f7762450ece2aa = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_15e0d84b392447d18b75dad535b1504d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_72bbf1885fdc1eb586f8f582213bd4a0 = $(`<div id="html_72bbf1885fdc1eb586f8f582213bd4a0" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Vox             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Viale Alcide de Gasperi 13</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Bassano del Grappa</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Vox%2C%20Viale%20Alcide%20de%20Gasperi%2013%2C%20Bassano%20del%20Grappa" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_15e0d84b392447d18b75dad535b1504d.setContent(html_72bbf1885fdc1eb586f8f582213bd4a0);
+            
+        
+
+        marker_c3081c38544125c5d7b2cb0cc3d3663e.bindPopup(popup_15e0d84b392447d18b75dad535b1504d)
+        ;
+
+        
+    
+    
+            marker_c3081c38544125c5d7b2cb0cc3d3663e.bindTooltip(
+                `<div>
+                     Vox
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_c3081c38544125c5d7b2cb0cc3d3663e.setIcon(icon_bcf901c6e9a7ec64d1f7762450ece2aa);
+            
+    
+            var marker_fb490e827d5381854144c928908e4368 = L.marker(
+                [45.69602696656931, 11.430939549805403],
+                {
+}
+            ).addTo(marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f);
+        
+    
+        var icon_e9eb91f4b86549f1fd76036e1fbef22e = L.icon({
+  "iconUrl": "https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true",
+  "iconSize": [30, 65],
+  "iconAnchor": [15.0, 65],
+  "popupAnchor": [0, -65],
+});
+        
+    
+        var popup_72466a84ae408f0f4d83d5fe02559190 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_8777d997b1867f80ca5b8856a4c3dd13 = $(`<div id="html_8777d997b1867f80ca5b8856a4c3dd13" style="width: 100.0%; height: 100.0%;">         <div style="font-family: Arial, sans-serif; width: 270px;">             <h4 style="display:flex; align-items:center; margin:0 0 10px 0; color:#003366; border-bottom:1px solid #EEE; padding-bottom:8px;">                 <img src="https://github.com/jacopo-bd/mappa-jev/blob/main/jever2.png?raw=true" width="20" style="margin-right:8px;">                 Briscola             </h4>             <div style="margin-bottom: 5px; display:flex; align-items:center;">                 <i class="fa-solid fa-map-pin" style="color:#D32F2F; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Via Guglielmo Marconi 24</span>             </div>             <div style="margin-bottom: 15px; display:flex; align-items:center;">                 <i class="fa-solid fa-city" style="color:#7B7B7B; margin-right:8px; width:15px; text-align:center;"></i>                 <span style="font-size:14px;">Marano Vicentino</span>             </div>             <a href="https://www.google.com/maps/search/?api=1&query=Briscola%2C%20Via%20Guglielmo%20Marconi%2024%2C%20Marano%20Vicentino" target="_blank" style="                 display:inline-block;                 padding:8px 12px;                 background-color:#0078A8;                 color:white;                 text-decoration:none;                 border-radius:5px;                 font-weight:bold;                 font-size:13px;             ">                 <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right:5px;"></i>                 Vedi su Google Maps             </a>         </div>         </div>`)[0];
+                popup_72466a84ae408f0f4d83d5fe02559190.setContent(html_8777d997b1867f80ca5b8856a4c3dd13);
+            
+        
+
+        marker_fb490e827d5381854144c928908e4368.bindPopup(popup_72466a84ae408f0f4d83d5fe02559190)
+        ;
+
+        
+    
+    
+            marker_fb490e827d5381854144c928908e4368.bindTooltip(
+                `<div>
+                     Briscola
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_fb490e827d5381854144c928908e4368.setIcon(icon_e9eb91f4b86549f1fd76036e1fbef22e);
+            
+    
+            marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f.addTo(map_a84e55bceb7129320e88b141ae9cf68b);
+        
+    
+            var locate_control_0c54f770134f0f656c94ccc3ca35adc9 = L.control.locate(
+                {}
+            ).addTo(map_a84e55bceb7129320e88b141ae9cf68b);
+            
+        
+    
+            var layer_control_08edd09fef4317803181083ba7a1232a_layers = {
+                base_layers : {
+                    "openstreetmap" : tile_layer_0adc57a5661be581386de3026eb180b6,
+                    "Satellite" : tile_layer_25c1ecbc0939b89e88335881425fffee,
+                },
+                overlays :  {
+                    "macro_element_38ecbd52cd0ce7dd3b9cc98879873a5f" : marker_cluster_38ecbd52cd0ce7dd3b9cc98879873a5f,
+                },
+            };
+            let layer_control_08edd09fef4317803181083ba7a1232a = L.control.layers(
+                layer_control_08edd09fef4317803181083ba7a1232a_layers.base_layers,
+                layer_control_08edd09fef4317803181083ba7a1232a_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": true,
+  "autoZIndex": true,
+}
+            ).addTo(map_a84e55bceb7129320e88b141ae9cf68b);
+
+        
+</script>
+</html>
