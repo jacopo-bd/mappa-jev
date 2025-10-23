@@ -1,1 +1,1 @@
-<img src="[url](https://github.com/jacopo-bd/mappa-jev/blob/main/omino.gif?raw=true)" alt="Oppa">
+<img src="[url](https://github.com/jacopo-bd/mappa-jev/blob/main/omino.gif?raw=true)">
