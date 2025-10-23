@@ -1,1 +1,2 @@
-<img src="[url](https://github.com/jacopo-bd/mappa-jev/blob/main/omino.gif?raw=true)">
+[<img src="[url](https://github.com/jacopo-bd/mappa-jev/blob/main/omino.gif?raw=true)">
+](https://github.com/jacopo-bd/mappa-jev/blob/main/omino.gif?raw=true)
